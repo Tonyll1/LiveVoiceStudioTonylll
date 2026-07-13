@@ -1,0 +1,24 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+logs/*.log
+sounds/cache/
+
+estructura.txt
+tree.txt
+
+*.old.py
+# Build outputs
+build/
+dist/
+*.spec.bak
+
+# Local runtime data
+commands.json
+config.json
+sounds/commands/*
+!sounds/commands/.gitkeep
+.pytest_cache/

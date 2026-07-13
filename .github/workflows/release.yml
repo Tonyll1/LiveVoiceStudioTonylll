@@ -1,0 +1,49 @@
+name: Publish GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Build EXE
+        run: python -m PyInstaller --noconfirm --clean LiveVoiceStudio.spec
+
+      - name: Create release ZIP
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release/LiveVoiceStudio | Out-Null
+          Copy-Item dist/LiveVoiceStudio.exe release/LiveVoiceStudio/
+          Copy-Item README.md release/LiveVoiceStudio/
+          Copy-Item LICENSE release/LiveVoiceStudio/
+          Compress-Archive -Path release/LiveVoiceStudio -DestinationPath "release/LiveVoiceStudio-${{ github.ref_name }}-Windows.zip"
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release/LiveVoiceStudio-${{ github.ref_name }}-Windows.zip
