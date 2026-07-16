@@ -1,0 +1,29 @@
+# Entorno virtual
+.venv/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+
+# Compilación
+build/
+dist/
+
+# Pytest
+.pytest_cache/
+
+# Logs
+logs/
+
+# Configuración local
+config.json
+commands.json
+
+# Audio generado automáticamente
+sounds/cache/
+
+# Modelos locales de Piper
+voices/piper/
+
+# Archivos temporales
+*.spec.bak
