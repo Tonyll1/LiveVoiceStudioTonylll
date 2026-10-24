@@ -5,7 +5,7 @@ datas = [("web", "web")]
 binaries = []
 hiddenimports = collect_submodules("TikTokLive") + collect_submodules("edge_tts") + collect_submodules("livevoice")
 
-for package in ("webview",):
+for package in ("webview", "piper", "onnxruntime", "kokoro_onnx", "espeakng_loader", "phonemizer"):
     package_datas, package_binaries, package_hidden = collect_all(package)
     datas += package_datas
     binaries += package_binaries
@@ -20,7 +20,7 @@ analysis = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["matplotlib", "numpy", "pandas", "scipy", "sklearn", "seaborn", "jupyter", "IPython", "tkinter", "customtkinter"],
+    excludes=["matplotlib", "pandas", "scipy", "sklearn", "seaborn", "jupyter", "IPython", "tkinter", "customtkinter"],
     noarchive=False,
     optimize=1,
 )

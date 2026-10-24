@@ -21,3 +21,9 @@ sounds/commands/*
 sounds/alerts/*
 !sounds/alerts/.gitkeep
 estructura.txt
+
+# Voces descargadas o propias
+voices/
+
+# Imágenes, GIF y videos de alertas propias
+media/

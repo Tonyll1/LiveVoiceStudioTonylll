@@ -13,11 +13,57 @@ const PF = {
 };
 export const pf = (platform) => (PF[platform] ? `<span class="pf ${platform}"><svg viewBox="0 0 24 24">${PF[platform]}</svg></span>` : "");
 
+// Apariencia actual (la página Overlays la cambia en vivo). Los parámetros de la URL mandan sobre ella.
+export const look = { theme: "neon", alert_position: "top", alert_animation: "pop", alert_duration: 5 };
+
+const FONTS = {
+  Inter: "Inter:wght@500;700;800;900", Poppins: "Poppins:wght@500;700;800;900", Montserrat: "Montserrat:wght@500;700;800;900",
+  Nunito: "Nunito:wght@600;800;900", Bangers: "Bangers", "Press Start 2P": "Press+Start+2P", Orbitron: "Orbitron:wght@500;700;900",
+  "Comic Neue": "Comic+Neue:wght@700",
+};
+
+function loadFont(name) {
+  if (!FONTS[name] || document.getElementById(`font-${name}`)) return;
+  const link = document.createElement("link");
+  link.id = `font-${name}`;
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${FONTS[name].replace(/ /g, "+")}&display=swap`;
+  document.head.append(link);
+}
+
+function hexToRgb(hex) {
+  const value = (hex || "").replace("#", "");
+  if (value.length !== 6) return "14, 14, 22";
+  return [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16)).join(", ");
+}
+
 export function applyConfig(config) {
   if (!config) return;
+  Object.assign(look, config);
+  const pick = (key, fallback) => params.get(key) ?? config[key] ?? fallback;
   const root = document.documentElement.style;
+  const theme = pick("theme", "neon");
   root.setProperty("--accent", params.get("accent") || config.accent || "#8b5cf6");
   root.setProperty("--font", `${params.get("size") || config.font_size || 22}px`);
+  root.setProperty("--text", pick("text_color", "#ffffff"));
+  const opacity = Math.max(0, Math.min(100, Number(pick("card_opacity", 82)))) / 100;
+  const base = theme === "pastel" ? "255, 255, 255" : theme === "glass" ? "255, 255, 255" : hexToRgb(config.card_color || "#0e0e16");
+  root.setProperty("--card", `rgba(${base}, ${theme === "glass" ? Math.min(opacity, 0.18) : opacity})`);
+  const font = pick("font", "Inter");
+  loadFont(font);
+  root.setProperty("--family", `"${font}", "Inter", "Segoe UI", sans-serif`);
+  document.body.className = document.body.className.replace(/\btheme-\S+/g, "").trim() + ` theme-${theme}`;
+  look.alert_position = pick("position", config.alert_position || "top");
+  look.alert_animation = pick("animation", config.alert_animation || "pop");
+  look.alert_duration = Number(pick("duration", config.alert_duration || 5));
+
+  let custom = document.getElementById("custom-css");
+  if (!custom) {
+    custom = document.createElement("style");
+    custom.id = "custom-css";
+    document.head.append(custom);
+  }
+  custom.textContent = config.custom_css || "";
 }
 
 export function connect(handlers) {

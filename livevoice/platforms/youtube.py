@@ -147,15 +147,26 @@ class YouTubePlatform(PlatformClient):
             amount_text = renderer.get("purchaseAmountText", {}).get("simpleText", "")
             text = _runs_text(renderer.get("message", {}))
             user = self._user(renderer)
+            amount = max(1, _amount(amount_text))
             await self.publish(LiveEvent(
-                kind="gift", platform=self.name, user=user, gift=f"Super Chat {amount_text}",
-                amount=1, value=_amount(amount_text) * 100, text=text,
+                kind="gift", platform=self.name, user=user, gift="Super Chat", amount=amount, value=amount, text=text,
             ))
             if text:
                 await self.publish(LiveEvent(kind="chat", platform=self.name, user=user, text=text))
+        elif "liveChatPaidStickerRenderer" in item:
+            renderer = item["liveChatPaidStickerRenderer"]
+            amount = max(1, _amount(renderer.get("purchaseAmountText", {}).get("simpleText", "")))
+            await self.publish(LiveEvent(kind="gift", platform=self.name, user=self._user(renderer), gift="Super Sticker",
+                                         amount=amount, value=amount))
         elif "liveChatMembershipItemRenderer" in item:
             renderer = item["liveChatMembershipItemRenderer"]
-            await self.publish(LiveEvent(kind="sub", platform=self.name, user=self._user(renderer)))
+            await self.publish(LiveEvent(kind="sub", platform=self.name, user=self._user(renderer), gift="Miembro"))
+        elif "liveChatSponsorshipsGiftPurchaseAnnouncementRenderer" in item:
+            renderer = item["liveChatSponsorshipsGiftPurchaseAnnouncementRenderer"]
+            header = renderer.get("header", {}).get("liveChatSponsorshipsHeaderRenderer", {})
+            count = max(1, _amount(_runs_text(header.get("primaryText", {}))))
+            await self.publish(LiveEvent(kind="gift", platform=self.name, user=self._user(header or renderer),
+                                         gift="Membresías regaladas", amount=count, value=count * 5))
 
     async def close(self):
         session, self._session = self._session, None

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Último</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { padding: .4em; font-size: var(--font); }
+  .tag { display: inline-flex; align-items: center; gap: .5em; background: var(--card); border-radius: .8em; padding: .4em .8em; border-left: 4px solid var(--accent); }
+  .k { font-size: .65em; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); filter: brightness(1.4); }
+  .n { font-weight: 900; }
+  .pop { animation: pop-in .6s cubic-bezier(.2,1.4,.4,1) both; }
+</style>
+</head>
+<body>
+<div class="tag" id="tag"><span class="k" id="label"></span><span class="n shadow-text" id="name">—</span></div>
+<script type="module">
+  import { connect, esc, isPreview, params, pf } from "/overlays/overlay.js";
+  const type = params.get("type") || "follow";
+  const LABEL = { follow: "Último seguidor", gift: "Último regalo", sub: "Último sub", bits: "Últimos bits", raid: "Último raid", chat: "Último mensaje" };
+  document.getElementById("label").textContent = params.get("label") || LABEL[type] || type;
+  function show(event, animate = true) {
+    if (event.kind !== type && !(type === "gift" && event.kind === "bits")) return;
+    const extra = event.kind === "gift" ? ` · ${event.amount}× ${esc(event.gift)}` : event.kind === "bits" ? ` · ${event.amount} bits` : "";
+    const name = document.getElementById("name");
+    name.innerHTML = `${pf(event.platform)} ${esc(event.user.name)}${extra}`;
+    const tag = document.getElementById("tag");
+    if (animate) { tag.classList.remove("pop"); void tag.offsetWidth; tag.classList.add("pop"); }
+  }
+  connect({ hello: (data) => (data.recent || []).forEach((event) => show(event, false)), event: show });
+  if (isPreview) show({ kind: type, platform: "tiktok", amount: 3, gift: "Rosa", user: { name: "Ana" } });
+</script>
+</body>
+</html>

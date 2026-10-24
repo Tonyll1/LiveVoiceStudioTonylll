@@ -115,17 +115,23 @@ class TwitchPlatform(PlatformClient):
         elif command == "USERNOTICE":
             await self._usernotice(tags, msg["text"])
 
+    @staticmethod
+    def sub_tier(tags: dict) -> str:
+        """Variante de la suscripción: Tier 1/2/3 o Prime (para alertas distintas por nivel)."""
+        plan = tags.get("msg-param-sub-plan", "1000")
+        return {"Prime": "Prime", "2000": "Tier 2", "3000": "Tier 3"}.get(plan, "Tier 1")
+
     async def _usernotice(self, tags: dict, text: str):
         kind = tags.get("msg-id", "")
         user = self._user(tags)
         if kind in ("sub", "resub", "primepaidupgrade", "giftpaidupgrade"):
             months = int(tags.get("msg-param-cumulative-months", 1) or 1)
-            await self.publish(LiveEvent(kind="sub", platform=self.name, user=user, text=text, amount=months))
+            await self.publish(LiveEvent(kind="sub", platform=self.name, user=user, text=text, amount=months, gift=self.sub_tier(tags)))
         elif kind == "subgift":
-            await self.publish(LiveEvent(kind="sub", platform=self.name, user=user, gift="sub", amount=1, text=text))
+            await self.publish(LiveEvent(kind="sub", platform=self.name, user=user, gift="Sub regalada", amount=1, text=text))
         elif kind == "submysterygift":
             count = int(tags.get("msg-param-mass-gift-count", 1) or 1)
-            await self.publish(LiveEvent(kind="gift", platform=self.name, user=user, gift="subs", amount=count, value=count * 500))
+            await self.publish(LiveEvent(kind="gift", platform=self.name, user=user, gift="Subs regaladas", amount=count, value=count * 500))
         elif kind == "raid":
             viewers = int(tags.get("msg-param-viewerCount", 0) or 0)
             await self.publish(LiveEvent(kind="raid", platform=self.name, user=user, amount=viewers))

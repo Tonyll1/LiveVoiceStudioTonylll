@@ -2,14 +2,13 @@
 
 Edge (online, +300 voces neuronales) es el principal. Si Microsoft cambia algo o
 se cae, el gestor salta automáticamente a Google (online) y después a las voces
-de Windows (SAPI, sin internet), así el directo nunca se queda mudo.
+de Windows (sin internet), así el directo nunca se queda mudo. El resto de motores
+(Windows, Piper, TikTok) están en local_engines.py.
 """
 from __future__ import annotations
 
 import asyncio
 import hashlib
-import subprocess
-import sys
 import urllib.parse
 from pathlib import Path
 
@@ -122,77 +121,3 @@ class GoogleEngine:
             await self._session.close()
 
 
-class SapiEngine:
-    """Voces instaladas en Windows vía System.Speech (funciona sin internet)."""
-
-    name = "sapi"
-    label = "Windows (sin internet)"
-
-    _SCRIPT = r"""
-Add-Type -AssemblyName System.Speech
-$s = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$voice = $env:LVS_VOICE
-if ($voice) { try { $s.SelectVoice($voice) } catch {} }
-$s.Rate = [int]$env:LVS_RATE
-$s.SetOutputToWaveFile($env:LVS_OUT)
-$s.Speak([IO.File]::ReadAllText($env:LVS_TEXT, [Text.Encoding]::UTF8))
-$s.Dispose()
-"""
-
-    @staticmethod
-    def _run_powershell(script: str, env: dict | None = None, timeout: int = 30) -> str:
-        if sys.platform != "win32":
-            raise TTSError("Las voces de Windows solo están disponibles en Windows.")
-        import os
-
-        full_env = {**os.environ, **(env or {})}
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
-            capture_output=True,
-            text=True,
-            env=full_env,
-            timeout=timeout,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-        if result.returncode != 0:
-            raise TTSError(result.stderr.strip() or "PowerShell falló")
-        return result.stdout
-
-    async def synthesize(self, text: str, voice: str = "", rate: int = 0, pitch: int = 0) -> Path:
-        target = cache_file("sapi", voice, rate, text, suffix=".wav")
-        if target.exists() and target.stat().st_size > 0:
-            return target
-        text_file = target.with_suffix(".txt")
-        text_file.write_text(text, encoding="utf-8")
-        sapi_rate = max(-10, min(10, round(rate / 10)))
-        try:
-            await asyncio.to_thread(
-                self._run_powershell,
-                self._SCRIPT,
-                {"LVS_VOICE": voice, "LVS_RATE": str(sapi_rate), "LVS_OUT": str(target), "LVS_TEXT": str(text_file)},
-            )
-        except subprocess.TimeoutExpired as error:
-            raise TTSError("Windows TTS tardó demasiado.") from error
-        finally:
-            text_file.unlink(missing_ok=True)
-        if not target.exists():
-            raise TTSError("Windows TTS no generó audio.")
-        return target
-
-    def list_voices(self) -> list[dict]:
-        script = (
-            "Add-Type -AssemblyName System.Speech;"
-            "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;"
-            "$s.GetInstalledVoices() | ForEach-Object { $v=$_.VoiceInfo; "
-            "\"$($v.Name)|$($v.Culture.Name)|$($v.Gender)\" }"
-        )
-        try:
-            output = self._run_powershell(script, timeout=20)
-        except Exception:
-            return []
-        voices = []
-        for line in output.splitlines():
-            parts = line.strip().split("|")
-            if len(parts) == 3 and parts[0]:
-                voices.append({"name": parts[0], "locale": parts[1], "gender": parts[2]})
-        return voices

@@ -44,6 +44,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "enabled": True,
         "engine": "edge",
         "fallback_enabled": True,
+        "tiktok_session_id": "",
+        "elevenlabs_key": "",
+        "elevenlabs_model": "eleven_flash_v2_5",
         "voice": "es-MX-DaliaNeural",
         "rate": 0,
         "pitch": 0,
@@ -105,6 +108,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "join": {**_alert("{user} llegó al directo", tts=False), "enabled": False},
     },
     "commands": [],
+    "custom_alerts": [],
     "games": {
         "enabled": True,
         "dice": True,
@@ -126,7 +130,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
     },
     "welcome": {
         "enabled": True,
+        "mode": "new",
         "text": "Bienvenido {user}, gracias por pasar.",
+        "text_back": "",
+        "cooldown": 20,
+        "max_queue": 3,
         "tts": True,
     },
     "timers": [
@@ -159,6 +167,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "chat_fade_seconds": 0,
         "font_size": 22,
         "show_platform_icon": True,
+        "theme": "neon",
+        "font": "Inter",
+        "text_color": "#ffffff",
+        "card_opacity": 82,
+        "alert_position": "top",
+        "alert_animation": "pop",
+        "alert_duration": 5,
+        "custom_css": "",
     },
 }
 

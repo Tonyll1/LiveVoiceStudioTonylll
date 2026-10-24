@@ -10,8 +10,10 @@ from livevoice.audio.player import AudioPlayer
 from livevoice.core.bus import bus
 from livevoice.core.config import Config
 from livevoice.core.logger import logger
-from livevoice.tts.engines import EdgeEngine, GoogleEngine, SapiEngine, TTSError
-from livevoice.tts.voices import PRESETS_BY_ID, VoiceCatalog, engine_for
+from livevoice.tts.ai_engines import ElevenLabsEngine, KokoroEngine
+from livevoice.tts.engines import EdgeEngine, GoogleEngine, TTSError
+from livevoice.tts.local_engines import PiperEngine, SapiEngine, TikTokEngine
+from livevoice.tts.voices import PRESETS_BY_ID, VoiceCatalog, engine_for, migrate_voice_id, split_voice
 
 
 PRIORITY_CHAT = 10
@@ -35,6 +37,8 @@ class SpeechItem:
     user: str = field(compare=False, default="")
     platform: str = field(compare=False, default="")
     created: float = field(compare=False, default_factory=time.time)
+    engine_used: str = field(compare=False, default="")
+    voice_used: str = field(compare=False, default="")
 
     def __post_init__(self):
         self.sort_key = (-self.priority, self.seq)
@@ -51,6 +55,9 @@ class SpeechItem:
             "user": self.user,
             "platform": self.platform,
             "priority": self.priority,
+            "engine_used": self.engine_used,
+            "voice_used": self.voice_used,
+            "fallback": bool(self.voice_used) and self.voice_used != self.voice,
         }
 
 
@@ -59,7 +66,18 @@ class TTSManager:
         self.config = config
         self.player = player
         self.catalog = catalog
-        self.engines = {"edge": EdgeEngine(), "google": GoogleEngine(), "sapi": SapiEngine()}
+        self.engines = {
+            "edge": EdgeEngine(),
+            "google": GoogleEngine(),
+            "tiktok": TikTokEngine(lambda: self.config.get("tts.tiktok_session_id", "")),
+            "piper": PiperEngine(),
+            "kokoro": KokoroEngine(),
+            "elevenlabs": ElevenLabsEngine(
+                lambda: self.config.get("tts.elevenlabs_key", ""),
+                lambda: self.config.get("tts.elevenlabs_model", "eleven_flash_v2_5"),
+            ),
+            "sapi": SapiEngine(),
+        }
         self.engine_status: dict[str, dict] = {
             name: {"ok": True, "error": "", "failed_at": 0.0} for name in self.engines
         }
@@ -82,7 +100,8 @@ class TTSManager:
         if self._task:
             self._task.cancel()
         self.player.stop_voice()
-        await self.engines["google"].close()
+        for name in ("google", "tiktok", "elevenlabs"):
+            await self.engines[name].close()
 
     # ── API pública ────────────────────────────────────────────────
 
@@ -124,7 +143,7 @@ class TTSManager:
             priority=priority,
             seq=next(self._seq),
             text=text,
-            voice=voice or resolved_voice,
+            voice=migrate_voice_id(voice or resolved_voice),
             rate=rate,
             pitch=pitch,
             user=user_name,
@@ -215,45 +234,69 @@ class TTSManager:
                     "text": f"El motor {name} falló, usando respaldo automático.{hint} ({str(error)[:80]})",
                 })
 
+    # Respaldos en orden: online primero (mejor calidad), después los que funcionan sin internet.
+    FALLBACK_ORDER = ("edge", "google", "kokoro", "piper", "sapi")
+
     async def synthesize(self, item: SpeechItem):
         """Intenta el motor de la voz elegida y, si falla, recorre los respaldos."""
         primary = engine_for(item.voice)
         voice = self.catalog.get(item.voice)
-        language = voice.language if voice else item.voice.split("-")[0].replace("google:", "").replace("sapi:", "") or "es"
+        language = voice.language if voice else split_voice(item.voice)[1].split("-")[0].split("_")[0].lower()
         if len(language) != 2:
             language = "es"
 
         attempts = [primary]
         if self.config.get("tts.fallback_enabled", True):
-            attempts += [name for name in ("edge", "google", "sapi") if name != primary]
+            attempts += [name for name in self.FALLBACK_ORDER if name != primary]
 
         last_error: Exception | None = None
         for name in attempts:
             if name != primary and not self._engine_available(name):
                 continue
+            target = item.voice if name == primary else self._fallback_voice(name, language, voice.gender if voice else "")
+            if target is None:
+                continue
             try:
-                if name == "edge":
-                    edge_voice = item.voice if primary == "edge" else self._edge_voice_for(language)
-                    path = await self.engines["edge"].synthesize(item.text, edge_voice, item.rate, item.pitch)
-                elif name == "google":
-                    lang = item.voice.split(":", 1)[1] if primary == "google" else language
-                    path = await self.engines["google"].synthesize(item.text, lang)
-                else:
-                    sapi_voice = item.voice.split(":", 1)[1] if primary == "sapi" else ""
-                    path = await self.engines["sapi"].synthesize(item.text, sapi_voice, item.rate)
+                path = await self._run_engine(name, target, item)
                 self._mark(name, None)
+                item.engine_used, item.voice_used = name, target
+                if name != primary and item.priority >= PRIORITY_SYSTEM:
+                    # Pruebas de voz: avisar que no sonó la voz elegida, en vez de cambiarla en silencio.
+                    bus.emit_nowait("ws", "notice", {
+                        "level": "warning",
+                        "text": f"La voz {item.voice} no está disponible ({last_error}). Sonó con el respaldo: {target}.",
+                    })
                 return path
             except (TTSError, OSError, asyncio.TimeoutError) as error:
                 last_error = error
                 self._mark(name, error)
         raise TTSError(f"Ningún motor de voz respondió: {last_error}")
 
-    def _edge_voice_for(self, language: str) -> str:
+    async def _run_engine(self, name: str, voice_id: str, item: SpeechItem):
+        kind, voice = split_voice(voice_id)
+        engine = self.engines[name]
+        if name == "sapi":
+            return await engine.synthesize(item.text, voice, item.rate, item.pitch, kind=kind)
+        return await engine.synthesize(item.text, voice, item.rate, item.pitch)
+
+    def _fallback_voice(self, engine: str, language: str, gender: str = "") -> str | None:
+        """Voz del mismo idioma (y género, si se sabe) en otro motor. None si ese motor no tiene ninguna."""
         configured = self.config.get("tts.voice", "")
-        if engine_for(configured) == "edge" and configured.lower().startswith(language):
-            return configured
-        options = self.catalog.by_language(language)
-        return options[0].id if options else "es-MX-DaliaNeural"
+        if engine == "edge":
+            if engine_for(configured) == "edge" and configured.lower().startswith(language):
+                return configured
+            options = self.catalog.by_language(language, "edge")
+            same_gender = [voice for voice in options if gender and voice.gender == gender]
+            options = same_gender or options
+            return options[0].id if options else "es-MX-DaliaNeural"
+        if engine == "google":
+            return f"google:{language}"
+        options = self.catalog.by_language(language, engine)
+        if engine == "sapi":
+            options = options or [voice for voice in self.catalog.voices if voice.engine == "sapi"]
+            # Las voces modernas (OneCore) suenan mejor que las SAPI clásicas.
+            options = sorted(options, key=lambda voice: not voice.id.startswith("win:"))
+        return options[0].id if options else None
 
     async def _worker(self):
         prepared: tuple[SpeechItem, asyncio.Task, int] | None = None

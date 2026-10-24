@@ -32,7 +32,14 @@ const SECTIONS = {
       <li><code>/overlay/goal?goal=likes</code> — barra de meta (<code>likes</code>, <code>followers</code>, <code>gifts</code>, <code>subs</code>).</li>
       <li><code>/overlay/leaderboard</code> — top regaladores (<code>?type=points</code> para puntos).</li>
       <li><code>/overlay/giveaway</code> y <code>/overlay/poll</code> — sorteos y encuestas.</li>
-    </ul>`],
+      <li><code>/overlay/events</code> — actividad reciente (follows, regalos, subs, raids).</li>
+      <li><code>/overlay/latest?type=follow</code> — último seguidor (<code>gift</code>, <code>sub</code>, <code>bits</code>, <code>raid</code>).</li>
+      <li><code>/overlay/counter?stat=likes</code> — contador animado (<code>viewers</code>, <code>followers</code>, <code>messages</code>…).</li>
+      <li><code>/overlay/command</code> — aviso cuando alguien usa un comando de sonido.</li>
+      <li><code>/overlay/all</code> — <b>todo en uno</b>: una sola fuente 1920×1080 con lo principal ya colocado.</li>
+    </ul>
+    <p>Todos aceptan <code>?accent=%23ff0066</code> (color) y <code>?size=28</code> (tamaño de letra) para personalizarlos por separado.
+      Pruébalos todos a la vez en <a href="#" data-go="playground">Campo de pruebas</a>.</p>`],
 
   audio: ["🔊 Audio y voz en OBS", () => `
     <h3>Opción simple</h3>
@@ -45,6 +52,107 @@ const SECTIONS = {
       <li>Para oírla tú también: en OBS → Propiedades avanzadas de audio → monitor “Monitorear y salida”.</li>
     </ol>
     <div class="callout">💡 Si la voz tapa el juego, baja el volumen de la voz o usa un filtro “Compresor” con sidechain en OBS.</div>`],
+
+  local: ["💻 Todo funciona en tu PC", () => `
+    <p>LiveVoice Studio <b>no necesita ningún servidor</b> ni cuenta: lo instalas y todo corre en tu computadora.</p>
+    <ul>
+      <li><b>El panel y los overlays</b> los sirve la propia app en <code>${origin()}</code>. Solo tu PC (y OBS, que corre en ella) los ve.</li>
+      <li><b>Tus datos</b> (config, puntos, sonidos, clips, voces descargadas) se guardan en la carpeta del programa. Puedes copiarla a otro PC o a un USB.</li>
+      <li><b>El chat</b> se lee directamente de TikTok/Twitch/Kick/YouTube desde tu PC.</li>
+    </ul>
+    <h3>¿Qué necesita internet y qué no?</h3>
+    <table class="table"><tbody>
+      <tr><td>Voces <b>Piper</b> y <b>Windows</b> (incluido Loquendo si lo instalas)</td><td><span class="pill connected">Sin internet</span></td></tr>
+      <tr><td>Voces Edge y Google</td><td><span class="pill waiting">Necesitan internet</span></td></tr>
+      <tr><td>Voces de TikTok</td><td><span class="pill waiting">Internet + tu sessionid</span></td></tr>
+      <tr><td>Leer el chat de las plataformas</td><td><span class="pill waiting">Internet (obvio: estás en directo)</span></td></tr>
+    </tbody></table>
+    <div class="callout">💡 Para no depender de nadie: descarga una voz Piper en español (página Voces). Si Microsoft o Google fallan, la app usa Piper o Windows automáticamente.</div>`],
+
+  voices: ["🎭 Voces extra y Loquendo", () => `
+    <h3>Motores disponibles</h3>
+    <ul>
+      <li><b>Edge</b> — 300+ voces neuronales de Microsoft. La mejor calidad gratis.</li>
+      <li><b>Piper</b> — voces neuronales que corren en tu PC, sin internet. Descárgalas en la página Voces.</li>
+      <li><b>¿Y “Brian” de StreamElements?</b> StreamElements cerró su generador de voces gratuito a finales de 2025. Su equivalente es <b>Ryan (Reino Unido)</b> en Edge; el chat lo pide con <code>!voz brian</code>.</li>
+      <li><b>TikTok</b> — Ghostface, Stormtrooper, C-3PO, Rocket, el señor mexicano, cantantes… Igual que TikFinity, necesitan tu <code>sessionid</code> (Ajustes).</li>
+      <li><b>Windows</b> — las voces instaladas en tu sistema (Raúl, Sabina…) y cualquier voz SAPI que instales, como Loquendo.</li>
+      <li><b>Google</b> — la voz del traductor; respaldo de emergencia.</li>
+    </ul>
+    <h3>Loquendo (Jorge, Carmen, Javier…)</h3>
+    <p>Loquendo es un programa <b>comercial y descontinuado</b> (ahora es de Nuance/Microsoft), por eso no puede venir incluido. Pero si tienes un instalador de sus voces <b>SAPI5</b>:</p>
+    <ol class="steps">
+      <li>Instálalo normalmente en Windows (son voces de 32 bits).</li>
+      <li>En LiveVoice: Voces → <b>Actualizar catálogo</b>.</li>
+      <li>Aparecerán en el filtro <b>Windows</b> con la etiqueta “(32 bits)”. Elige una y listo: sin internet.</li>
+    </ol>
+    <div class="callout warn">Descarga instaladores solo de fuentes legítimas o de licencias que tengas. Los “Loquendo gratis” de sitios desconocidos suelen traer malware.</div>
+    <p>Lo mismo vale para otras voces SAPI (IVONA, Acapela, Cepstral, eSpeak…): si Windows las ve, LiveVoice también.</p>
+    <h3>Más voces gratis de Windows</h3>
+    <ol class="steps">
+      <li>Windows → Configuración → Hora e idioma → <b>Voz</b> → Agregar voces.</li>
+      <li>Instala idiomas/voces (ej. Español de España, Inglés). Son gratis y funcionan sin internet.</li>
+      <li>En LiveVoice pulsa <b>Actualizar catálogo</b>.</li>
+    </ol>
+    <h3>Crear tu propia voz (o la de un personaje)</h3>
+    <p>Puedes entrenar una voz Piper con unas horas de grabaciones limpias de una persona (¡con su permiso!):</p>
+    <ol class="steps">
+      <li>Graba o reúne 1–3 horas de audio claro con su transcripción (formato LJSpeech: <code>wav</code> + <code>metadata.csv</code>).</li>
+      <li>Usa el entrenamiento de Piper (proyecto <code>rhasspy/piper</code>, carpeta <code>TRAINING.md</code>) partiendo de una voz en español existente; con una GPU tarda unas horas.</li>
+      <li>Exporta el modelo a <code>.onnx</code> y copia <code>mi-voz.onnx</code> y <code>mi-voz.onnx.json</code> a la carpeta <code>voices/piper</code> del programa.</li>
+      <li>Actualiza el catálogo: aparecerá como voz Piper y funcionará sin internet.</li>
+    </ol>
+    <div class="callout">Para efectos rápidos sin entrenar nada usa los <b>personajes</b> (ardilla, gigante, robot…) sobre cualquier voz neuronal.</div>`],
+
+  ai: ["🤖 Voces de IA y Piper", () => `
+    <p>Todas las voces “neuronales” son IA. Estas son las opciones, de más fácil a más avanzada:</p>
+    <table class="table"><tbody>
+      <tr><td><b>Edge</b></td><td>300+ voces IA de Microsoft</td><td><span class="pill waiting">Internet</span></td><td>Ya incluidas</td></tr>
+      <tr><td><b>Kokoro</b></td><td>IA local de alta calidad (Alex, Dora, Santa…)</td><td><span class="pill connected">Sin internet</span></td><td>Voces → Voces de IA → Descargar (~355 MB)</td></tr>
+      <tr><td><b>Piper</b></td><td>IA local ligera, muchos acentos</td><td><span class="pill connected">Sin internet</span></td><td>Voces → Voces sin internet → Descargar (20–110 MB)</td></tr>
+      <tr><td><b>ElevenLabs</b></td><td>La IA más realista y voces clonadas</td><td><span class="pill waiting">Internet + clave</span></td><td>Ajustes → ElevenLabs</td></tr>
+    </tbody></table>
+
+    <h3>Cómo conseguir voces Piper</h3>
+    <ol class="steps">
+      <li><b>Desde la app (lo más fácil):</b> Voces → “Voces sin internet (Piper)” → <b>Ver voces para descargar</b> → elige y pulsa Descargar. En español hay de México (Ald, Claude), España (Davefx, Sharvard, Carlfm) y Argentina (Daniela).</li>
+      <li><b>A mano:</b> entra en <code>huggingface.co/rhasspy/piper-voices</code>, abre <code>es/</code> → país → voz → calidad, y descarga los dos archivos: <code>.onnx</code> y <code>.onnx.json</code>.</li>
+      <li>Cópialos a la carpeta <code>voices/piper</code> del programa (junto a config.json) y pulsa <b>Actualizar catálogo</b> en Voces.</li>
+      <li><b>Voces de la comunidad:</b> hay miles de modelos Piper entrenados por usuarios (personajes, acentos, idiomas). Cualquier par <code>.onnx</code> + <code>.onnx.json</code> compatible con Piper funciona igual.</li>
+    </ol>
+    <div class="callout">💡 Calidad: <b>x_low</b> y <b>low</b> son rápidas y ligeras; <b>medium</b> es el equilibrio; <b>high</b> suena mejor pero pesa más.</div>
+
+    <h3>Kokoro (IA local recomendada)</h3>
+    <p>Suena más natural que Piper y funciona sin internet. Tras descargarla, filtra por “IA Kokoro” en Voces. La primera frase tarda un poco mientras carga el modelo; después ~1 segundo por frase.
+      Las voces en inglés (Heart, Bella, Adam, Michael…) leyendo español dan un acento “gringo” muy gracioso.</p>
+
+    <h3>ElevenLabs (clonar voces)</h3>
+    <ol class="steps">
+      <li>Crea una cuenta gratis en <code>elevenlabs.io</code>.</li>
+      <li>Para clonar: Voices → <b>Add voice</b> → <b>Instant Voice Clone</b> → sube 1–2 minutos de audio limpio. <b>Solo voces propias o con permiso.</b></li>
+      <li>Perfil → API Keys → crea una clave y pégala en Ajustes → ElevenLabs → <b>Cargar mis voces</b>.</li>
+      <li>El plan gratis tiene un límite de caracteres al mes: úsala en alertas propias o para personajes, no para todo el chat. Si se acaba, la app usa el respaldo automático.</li>
+    </ol>
+
+    <h3>Entrenar tu propia voz Piper (avanzado)</h3>
+    <p>Con 1–3 horas de grabaciones limpias de una persona (con su permiso) puedes entrenar un modelo Piper partiendo de una voz en español (proyecto <code>rhasspy/piper</code>, guía <code>TRAINING.md</code>; necesitas una GPU). Exportas a <code>.onnx</code> y lo copias a <code>voices/piper</code>.</p>`],
+
+  custom: ["✨ Alertas propias y personalizar", () => `
+    <h3>Alertas propias</h3>
+    <p>En <a href="#" data-go="alerts">Alertas</a> → <b>Tus alertas propias</b> → <b>Nueva alerta</b>. Cada alerta tiene:</p>
+    <ul>
+      <li><b>Cuándo:</b> un regalo concreto (ej. “Galaxia”) o cualquiera con un valor mínimo, follow, sub, bits, raid con mínimo de personas, compartir, likes, o una <b>palabra del chat</b> (ej. “jajaja” → sonido de risa).</li>
+      <li><b>Solo en:</b> limítala a una plataforma (ej. solo raids de Twitch).</li>
+      <li><b>Sonido:</b> tu MP3/WAV/OGG con su volumen.</li>
+      <li><b>Imagen, GIF o video:</b> PNG, JPG, GIF, WEBP, MP4 o WEBM. Aparece en el overlay de Alertas; los videos duran lo que dure el clip.</li>
+      <li><b>Frase y voz:</b> lo que dice, con la voz que quieras (por ejemplo Ghostface o una voz clonada de ElevenLabs solo para esa alerta).</li>
+      <li><b>Sustituir la alerta normal:</b> si está activo, ese evento ya no muestra la alerta por defecto.</li>
+    </ul>
+    <div class="callout">💡 Consigue sonidos y GIFs libres en sitios como <code>myinstants.com</code>, <code>freesound.org</code>, <code>pixabay.com</code> o <code>giphy.com</code> (revisa la licencia si monetizas).</div>
+    <h3>Personalizar los overlays</h3>
+    <p>En <a href="#" data-go="overlays">Overlays</a> → <b>Apariencia</b>: tema (Neón, Minimal, Gamer, Pastel, Cristal), fuente, colores, opacidad, posición, animación y duración de las alertas. Los cambios se ven al momento en OBS.</p>
+    <p>¿Quieres un overlay distinto en otra escena? Añade parámetros a su URL: <code>?theme=gamer</code>, <code>?accent=%23ff0066</code>, <code>?size=30</code>, <code>?font=Bangers</code>, <code>?position=bottom</code>, <code>?animation=bounce</code>, <code>?duration=8</code>.</p>
+    <p>Para control total: <b>CSS personalizado</b> en Apariencia, o el campo “CSS personalizado” de la fuente de navegador en OBS.</p>`],
 
   tiktok: ["TikTok", () => `
     <ol class="steps">

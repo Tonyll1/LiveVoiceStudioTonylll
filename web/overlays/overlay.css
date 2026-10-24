@@ -6,8 +6,9 @@
   --font: 22px;
   --card: rgba(14, 14, 22, .82);
   --text: #fff;
+  --family: "Inter", "Segoe UI", sans-serif;
 }
-html, body { margin: 0; background: transparent !important; overflow: hidden; color: var(--text); font-family: "Inter", "Segoe UI", sans-serif; }
+html, body { margin: 0; background: transparent !important; overflow: hidden; color: var(--text); font-family: var(--family); }
 * { box-sizing: border-box; }
 .shadow-text { text-shadow: 0 2px 8px rgba(0, 0, 0, .6); }
 
@@ -18,5 +19,41 @@ html, body { margin: 0; background: transparent !important; overflow: hidden; co
 @keyframes pop-in { 0% { transform: scale(.4) translateY(40px); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
 @keyframes fade-out { to { transform: translateY(-30px) scale(.95); opacity: 0; } }
 @keyframes slide-in { from { transform: translateX(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes slide-down { from { transform: translateY(-120%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes bounce-in { 0% { transform: scale(.2); opacity: 0; } 45% { transform: scale(1.18); opacity: 1; } 70% { transform: scale(.92); } 100% { transform: scale(1); } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zoom-in { from { transform: scale(2.2); opacity: 0; filter: blur(8px); } to { transform: none; opacity: 1; filter: none; } }
 @keyframes shine { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 @keyframes float { 50% { transform: translateY(-8px); } }
+
+/* ── Temas (página Overlays → Apariencia) ───────────────────────── */
+:is(.alert, .m, .box, .card, .tag, .c, .goal, .board, .sub) { transition: background .3s, border-color .3s; }
+
+/* Minimal: sin brillos, borde fino. */
+.theme-minimal :is(.alert, .m, .box, .card, .tag, .c, .goal, .board, .sub) {
+  box-shadow: none !important; border: 1px solid rgba(255, 255, 255, .14) !important; border-radius: .6em !important;
+}
+.theme-minimal .alert::before, .theme-minimal .fill::after { display: none; }
+.theme-minimal .avatar, .theme-minimal .gift-img { animation: none !important; }
+
+/* Gamer: esquinas cortadas, mayúsculas y barra de color. */
+.theme-gamer :is(.alert, .m, .box, .card, .tag, .c, .goal, .board, .sub) {
+  border-radius: 0 !important; border: 0 !important; border-left: .3em solid var(--accent) !important;
+  clip-path: polygon(0 0, calc(100% - .9em) 0, 100% .9em, 100% 100%, .9em 100%, 0 calc(100% - .9em));
+}
+.theme-gamer :is(.title, .k, .who, h3, .name) { text-transform: uppercase; letter-spacing: .06em; }
+
+/* Pastel: tarjetas claras con texto oscuro. */
+.theme-pastel { --text: #2b2340; }
+.theme-pastel :is(.alert, .m, .box, .card, .tag, .c, .goal, .board, .sub) {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .18) !important; border: 2px solid color-mix(in srgb, var(--accent) 35%, white) !important;
+  border-radius: 1.2em !important;
+}
+.theme-pastel .shadow-text { text-shadow: none; }
+.theme-pastel .alert::before { opacity: .4; }
+
+/* Cristal: fondo translúcido con desenfoque. */
+.theme-glass :is(.alert, .m, .box, .card, .tag, .c, .goal, .board, .sub) {
+  backdrop-filter: blur(14px) saturate(1.4); -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, .28) !important; box-shadow: 0 8px 32px rgba(0, 0, 0, .25) !important;
+}

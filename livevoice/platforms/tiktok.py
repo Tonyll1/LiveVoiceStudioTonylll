@@ -132,7 +132,7 @@ class TikTokPlatform(PlatformClient):
 
         @client.on(SubscribeEvent)
         async def on_sub(event):
-            await self.publish(LiveEvent(kind="sub", platform=self.name, user=self._user(event.user)))
+            await self.publish(LiveEvent(kind="sub", platform=self.name, user=self._user(event.user), gift="Super fan"))
 
         @client.on(LikeEvent)
         async def on_like(event):

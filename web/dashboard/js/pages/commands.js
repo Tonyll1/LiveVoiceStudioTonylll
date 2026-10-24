@@ -23,7 +23,7 @@ function list() {
   return `<table class="table"><thead><tr><th>Comando</th><th>Hace</th><th>Quién</th><th>Espera</th><th>Activo</th><th></th></tr></thead><tbody>
     ${commands.map((c, i) => `<tr>
       <td><b class="mono">${esc(c.name)}</b></td>
-      <td class="small">${c.sound ? `🔊 ${esc(c.sound.split(/[\\/]/).pop())}` : ""}${c.sound && c.text ? "<br>" : ""}${c.text ? `🗣️ ${esc(c.text.slice(0, 60))}` : ""}</td>
+      <td class="small">${c.media ? "🖼️ " : ""}${c.sound ? `🔊 ${esc(c.sound.split(/[\\/]/).pop())}` : ""}${c.sound && c.text ? "<br>" : ""}${c.text ? `🗣️ ${esc(c.text.slice(0, 60))}` : ""}</td>
       <td class="small">${esc((PERMISSIONS.find(([id]) => id === c.permission) || ["", "Todos"])[1])}</td>
       <td class="small">${c.cooldown || 0}s</td>
       <td><label class="switch"><input type="checkbox" data-toggle="${i}" ${c.enabled !== false ? "checked" : ""}><i></i></label></td>
@@ -44,6 +44,9 @@ function editor(index) {
       <div class="field"><span>Sonido (opcional)</span>
         <div class="row nowrap"><input class="input" id="c-sound" value="${esc(c.sound)}" placeholder="Sube un MP3, WAV u OGG">
         <label class="btn">${icon("upload")}Subir<input type="file" accept=".mp3,.wav,.ogg" hidden id="c-file"></label></div></div>
+      <div class="field"><span>GIF, imagen o video en el overlay “Comandos” (opcional)</span>
+        <div class="row nowrap"><input class="input" id="c-media" value="${esc(c.media || "")}" placeholder="PNG, JPG, GIF, WEBP, MP4 o WEBM">
+        <label class="btn">${icon("upload")}Subir<input type="file" accept=".png,.jpg,.jpeg,.gif,.webp,.mp4,.webm" hidden id="c-media-file"></label></div></div>
       <label class="field"><span>Frase que dice la voz (opcional)</span><input class="input" id="c-text" value="${esc(c.text)}" placeholder="Ej: Sígueme en Instagram arroba tunombre">
         <small>Variables: {user} quien lo usa, {target} lo que escribe después, {points} sus puntos.</small></label>
       <div class="grid g2">
@@ -59,13 +62,13 @@ function editor(index) {
       if (!name.startsWith("!")) name = `!${name}`;
       if (name === "!") throw new Error("Escribe un nombre para el comando.");
       const updated = {
-        name, sound: q("#c-sound").value.trim(), text: q("#c-text").value.trim(), permission: q("#c-perm").value,
+        name, sound: q("#c-sound").value.trim(), media: q("#c-media").value.trim(), text: q("#c-text").value.trim(), permission: q("#c-perm").value,
         cooldown: Number(q("#c-cd").value) || 0, global_cooldown: Number(q("#c-gcd").value) || 0,
         volume: Number(q("#c-vol").value) || 100,
         allowed_users: q("#c-allow").value.split(",").map((u) => u.trim().toLowerCase().replace(/^@/, "")).filter(Boolean),
         enabled: c.enabled !== false,
       };
-      if (!updated.sound && !updated.text) throw new Error("El comando necesita un sonido o una frase.");
+      if (!updated.sound && !updated.text && !updated.media) throw new Error("El comando necesita un sonido, un GIF o una frase.");
       const next = [...commands];
       if (next.some((other, i) => other.name === name && i !== index)) throw new Error(`Ya existe ${name}.`);
       if (index === undefined) next.push(updated); else next[index] = updated;
@@ -77,6 +80,14 @@ function editor(index) {
   const syncAllow = () => (allowBox.style.display = box.querySelector("#c-perm").value === "allowlist" ? "" : "none");
   syncAllow();
   box.querySelector("#c-perm").onchange = syncAllow;
+  box.querySelector("#c-media-file").onchange = async (event) => {
+    try {
+      box.querySelector("#c-media").value = (await uploadSound(event.target.files[0], "media")).path;
+      toast("GIF / video subido", "success");
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  };
   box.querySelector("#c-file").onchange = async (event) => {
     try {
       const result = await uploadSound(event.target.files[0], "commands");

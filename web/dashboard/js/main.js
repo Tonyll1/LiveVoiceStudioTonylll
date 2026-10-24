@@ -1,5 +1,6 @@
 import { action, connectSocket, icon, loadState, loadVoices, setConfig, store, toast } from "./core.js";
 import live from "./pages/live.js";
+import playground from "./pages/playground.js";
 import voices from "./pages/voices.js";
 import reading from "./pages/reading.js";
 import alerts from "./pages/alerts.js";
@@ -10,7 +11,7 @@ import clips from "./pages/clips.js";
 import guide from "./pages/guide.js";
 import settings from "./pages/settings.js";
 
-const PAGES = [live, voices, reading, alerts, commands, dynamics, overlays, clips, settings, guide];
+const PAGES = [live, playground, voices, reading, alerts, commands, dynamics, overlays, clips, settings, guide];
 const SECTIONS = { live: "Directo", voices: "Voz", alerts: "Interacción", overlays: "Stream", settings: "Sistema" };
 let current = null;
 

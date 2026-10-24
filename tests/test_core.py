@@ -167,3 +167,105 @@ def test_tts_queue_trims_chat_but_keeps_alerts(config):
         assert manager.say("silenciado") is None
 
     asyncio.run(scenario())
+
+
+def test_engine_prefixes():
+    from livevoice.tts.voices import engine_for, split_voice
+
+    assert engine_for("es-MX-DaliaNeural") == "edge"
+    assert engine_for("tiktok:en_us_ghostface") == "tiktok"
+    assert engine_for("sapi32:Loquendo Jorge") == "sapi"
+    assert engine_for("piper:es_MX-ald-medium") == "piper"
+    assert split_voice("win:Microsoft Raul") == ("win", "Microsoft Raul")
+    assert split_voice("es-ES-AlvaroNeural") == ("edge", "es-ES-AlvaroNeural")
+
+
+def test_catalog_includes_extra_engines():
+    engines = {voice.engine for voice in VoiceCatalog().voices}
+    assert {"edge", "google", "tiktok"} <= engines
+    assert "streamelements" not in engines
+
+
+def test_retired_streamelements_voices_migrate_to_edge():
+    from livevoice.tts.voices import migrate_voice_id
+
+    assert migrate_voice_id("se:Brian") == "en-GB-RyanNeural"
+    assert migrate_voice_id("se:Miguel") == "es-US-AlonsoNeural"
+    assert migrate_voice_id("es-MX-JorgeNeural") == "es-MX-JorgeNeural"
+    assert VoiceCatalog().resolve_alias("brian") == ("en-GB-RyanNeural", None)
+
+
+def test_offline_fallback_uses_windows_voice(config, tmp_path):
+    async def scenario():
+        manager = TTSManager(config, _Player(), VoiceCatalog())
+        calls = []
+
+        async def broken(*args, **kwargs):
+            raise TTSError("sin internet")
+
+        async def windows(text, voice="", rate=0, pitch=0, kind="sapi"):
+            calls.append((kind, voice))
+            return tmp_path / "win.wav"
+
+        for name in ("edge", "google", "kokoro", "piper"):
+            manager.engines[name].synthesize = broken
+        manager.engines["sapi"].synthesize = windows
+        manager.catalog.voices.append(manager.catalog.voices[0].__class__(
+            id="win:Microsoft Raul", engine="sapi", name="Raul", locale="es-MX", gender="Male"))
+        path = await manager.synthesize(manager.say("hola"))
+        assert path.name == "win.wav"
+        assert calls == [("win", "Microsoft Raul")]
+
+    asyncio.run(scenario())
+
+
+def test_ai_voice_prefixes_and_kokoro_offline_fallback(config, tmp_path):
+    from livevoice.tts.voices import Voice, engine_for, split_voice
+
+    assert engine_for("kokoro:em_alex") == "kokoro"
+    assert engine_for("eleven:21m00Tcm4TlvDq8ikWAM") == "elevenlabs"
+    assert split_voice("eleven:abc") == ("eleven", "abc")
+
+    async def scenario():
+        manager = TTSManager(config, _Player(), VoiceCatalog())
+        manager.catalog.voices.append(Voice(id="kokoro:em_alex", engine="kokoro", name="Alex", locale="es-ES", gender="Male"))
+        calls = []
+
+        async def broken(*args, **kwargs):
+            raise TTSError("sin internet")
+
+        async def kokoro(text, voice, rate=0, pitch=0):
+            calls.append(voice)
+            return tmp_path / "kokoro.wav"
+
+        manager.engines["edge"].synthesize = broken
+        manager.engines["google"].synthesize = broken
+        manager.engines["kokoro"].synthesize = kokoro
+        path = await manager.synthesize(manager.say("hola"))
+        assert path.name == "kokoro.wav" and calls == ["em_alex"]
+
+        # ElevenLabs sin clave falla con un mensaje claro y cae al respaldo.
+        error = None
+        try:
+            await manager.engines["elevenlabs"].synthesize("hola", "abc")
+        except TTSError as exc:
+            error = str(exc)
+        assert "clave" in error
+
+    asyncio.run(scenario())
+
+
+def test_twitch_sub_tiers(config):
+    from livevoice.platforms.twitch import TwitchPlatform
+
+    platform = TwitchPlatform(config)
+    published = []
+
+    async def publish(event):
+        published.append(event)
+
+    platform.publish = publish
+    for plan in ("1000", "2000", "3000", "Prime"):
+        asyncio.run(platform._usernotice({"msg-id": "sub", "msg-param-sub-plan": plan, "login": "ana"}, ""))
+    asyncio.run(platform._usernotice({"msg-id": "subgift", "login": "ana"}, ""))
+    assert [event.gift for event in published] == ["Tier 1", "Tier 2", "Tier 3", "Prime", "Sub regalada"]

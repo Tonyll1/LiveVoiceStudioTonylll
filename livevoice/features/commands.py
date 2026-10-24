@@ -9,6 +9,7 @@ from livevoice.core.bus import bus
 from livevoice.core.logger import logger
 from livevoice.core.models import LiveEvent
 from livevoice.features.chat_reader import user_matches
+from livevoice.features.custom_alerts import media_url
 from livevoice.tts.manager import PRIORITY_EVENT
 from livevoice.tts.text import clean_for_speech, render
 from livevoice.tts.voices import PRESETS, VOICE_ALIASES
@@ -114,7 +115,15 @@ class Commands:
             target = args.lstrip("@") or event.user.name
             self._say(render(text, user=event.user.name, target=target, args=args, points=self._points(event)), event)
 
-        await bus.emit("ws", "command", {"name": name, "user": event.user.to_dict(), "platform": event.platform})
+        media = command.get("media", "")
+        await bus.emit("ws", "command", {
+            "name": name,
+            "user": event.user.to_dict(),
+            "platform": event.platform,
+            "media": media_url(media),
+            "media_type": "video" if media.lower().endswith((".mp4", ".webm")) else "image",
+            "duration": float(command.get("duration", 0) or 0),
+        })
 
     def _points(self, event: LiveEvent) -> int:
         viewer = self.app.viewers.get(event.user.key) or {}

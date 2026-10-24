@@ -10,6 +10,8 @@ from pathlib import Path
 from aiohttp import WSMsgType, web
 
 from livevoice.audio.player import SUPPORTED_SOUND_EXTENSIONS, AudioPlayer
+
+MEDIA_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".mp4", ".webm"}
 from livevoice.core.bus import bus
 from livevoice.core.logger import logger
 from livevoice.core.paths import data_path, resource_path
@@ -55,6 +57,7 @@ class Server:
         router.add_post("/api/upload-sound", self.upload_sound)
         router.add_get("/api/sounds", self.list_sounds)
         router.add_get("/sounds/{folder}/{name}", self.serve_sound)
+        router.add_get("/media/{name}", self.serve_media)
 
     @staticmethod
     def _file(path: Path):
@@ -77,6 +80,12 @@ class Server:
             raise web.HTTPNotFound()
         path = data_path("sounds", folder, Path(request.match_info["name"]).name)
         if not path.is_file():
+            raise web.HTTPNotFound()
+        return web.FileResponse(path)
+
+    async def serve_media(self, request: web.Request):
+        path = data_path("media", Path(request.match_info["name"]).name)
+        if not path.is_file() or path.suffix.lower() not in MEDIA_EXTENSIONS:
             raise web.HTTPNotFound()
         return web.FileResponse(path)
 
@@ -111,7 +120,8 @@ class Server:
             "poll": self.studio.poll.state(),
             "stats": self.studio.stats.to_dict(),
             "leaderboard": self.studio.viewers.top(10),
-            "recent": [event for event in list(self.studio.stats.recent)[-20:] if event["kind"] == "chat"],
+            "recent": list(self.studio.stats.recent)[-30:],
+            "platforms": {name: platform.info() for name, platform in self.studio.platforms.items()},
         }
 
     async def broadcast(self, kind: str, data):
@@ -188,20 +198,25 @@ class Server:
         async for part in reader:
             if part.name == "folder":
                 value = (await part.text()).strip()
-                folder = value if value in ("commands", "alerts") else "commands"
+                folder = value if value in ("commands", "alerts", "media") else "commands"
             elif part.name == "file" and part.filename:
                 suffix = Path(part.filename).suffix.lower()
-                if suffix not in SUPPORTED_SOUND_EXTENSIONS:
-                    return _json({"ok": False, "error": "Formato no compatible. Usa MP3, WAV u OGG."}, 400)
-                stem = "".join(char for char in Path(part.filename).stem if char.isalnum() or char in "-_ ")[:40] or "sonido"
-                target = data_path("sounds", folder, f"{stem}-{uuid.uuid4().hex[:6]}{suffix}")
+                allowed = MEDIA_EXTENSIONS if folder == "media" else SUPPORTED_SOUND_EXTENSIONS
+                if suffix not in allowed:
+                    hint = "PNG, JPG, GIF, WEBP, MP4 o WEBM" if folder == "media" else "MP3, WAV u OGG"
+                    return _json({"ok": False, "error": f"Formato no compatible. Usa {hint}."}, 400)
+                stem = "".join(char for char in Path(part.filename).stem if char.isalnum() or char in "-_ ")[:40] or "archivo"
+                name = f"{stem}-{uuid.uuid4().hex[:6]}{suffix}"
+                target = data_path("media", name) if folder == "media" else data_path("sounds", folder, name)
                 with target.open("wb") as file:
                     while chunk := await part.read_chunk():
                         file.write(chunk)
                 saved = target
         if saved is None:
             return _json({"ok": False, "error": "No se recibió ningún archivo."}, 400)
-        return _json({"ok": True, "path": str(saved), "name": saved.name})
+        media_type = "video" if saved.suffix.lower() in (".mp4", ".webm") else "image" if folder == "media" else "audio"
+        return _json({"ok": True, "path": str(saved), "name": saved.name, "url": f"/media/{saved.name}" if folder == "media" else "",
+                      "media_type": media_type})
 
     async def list_sounds(self, _request):
         sounds = []

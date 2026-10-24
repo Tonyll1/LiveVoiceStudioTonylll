@@ -43,6 +43,23 @@ function render(target) {
           <p class="sub">TikTok limita las conexiones gratuitas del servidor de firmas. Si ves errores de “rate limit”, crea una clave gratis en <b>eulerstream.com</b> y pégala aquí.</p>
           <label class="field"><span>Clave API de firmas (opcional)</span><input class="input" type="password" data-bind="platforms.tiktok.sign_api_key" placeholder="euler_..."></label>
         </div>
+        <div class="card">
+          <h2>${icon("sparkles")}ElevenLabs (voces de IA)</h2>
+          <p class="sub">Crea una cuenta gratis en elevenlabs.io → perfil → <b>API Keys</b> → crea una clave con permiso de <i>Text to Speech</i> y <i>Voices (lectura)</i>. Se guarda solo en tu PC.</p>
+          <label class="field"><span>Clave API</span><input class="input" type="password" data-bind="tts.elevenlabs_key" placeholder="sk_..."></label>
+          <label class="field" style="margin-top:10px"><span>Modelo</span><select class="input" data-bind="tts.elevenlabs_model">
+            <option value="eleven_flash_v2_5">Flash v2.5 — rápido y gasta la mitad de caracteres (recomendado)</option>
+            <option value="eleven_multilingual_v2">Multilingual v2 — máxima calidad</option>
+          </select></label>
+          <button class="btn sm" style="margin-top:10px" id="eleven-load">${icon("refresh")}Cargar mis voces</button>
+        </div>
+        <div class="card">
+          <h2>${icon("voice")}Voces de TikTok (experimental)</h2>
+          <p class="sub">Para usar Ghostface, Stormtrooper, el señor mexicano, etc. TikTok solo las genera para cuentas con sesión iniciada.
+            Copia la cookie <code>sessionid</code> de tiktok.com (F12 → Aplicación → Cookies). Se guarda solo en tu PC, en config.json.</p>
+          <div class="callout warn small">Úsalo con una cuenta secundaria: el sessionid da acceso a la cuenta. Si TikTok lo invalida, las voces caen al respaldo automático.</div>
+          <label class="field"><span>sessionid</span><input class="input" type="password" data-bind="tts.tiktok_session_id" placeholder="pega aquí tu sessionid"></label>
+        </div>
       </div>
       <div class="stack">
         <div class="card"><div class="row"><h2 style="margin:0">${icon("check")}Diagnóstico</h2><span class="spacer"></span><button class="btn sm" id="diag-refresh">${icon("refresh")}</button></div>
@@ -65,6 +82,10 @@ function render(target) {
     toast(result.ok ? "Dispositivo de audio cambiado" : "No se pudo abrir ese dispositivo; se usa el predeterminado", result.ok ? "success" : "warning");
   };
   root.querySelector("#device-test").onclick = () => action("preview_voice", { text: "Prueba de audio. Uno, dos, tres." });
+  root.querySelector("#eleven-load").onclick = async () => {
+    const result = await action("elevenlabs_refresh");
+    if (result.ok) toast(`${result.count} voces de ElevenLabs cargadas. Elígelas en Voces → ElevenLabs.`, "success");
+  };
   root.querySelector("#refresh-voices").onclick = () => { action("refresh_voices"); toast("Actualizando voces…"); };
   root.querySelector("#open-browser").onclick = () => window.open(location.href, "_blank");
   root.querySelector("#diag-refresh").onclick = async () => {

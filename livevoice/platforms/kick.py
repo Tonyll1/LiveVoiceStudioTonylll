@@ -119,12 +119,12 @@ class KickPlatform(PlatformClient):
             ))
         elif name in ("SubscriptionEvent", "ChannelSubscriptionEvent"):
             user = User(platform=self.name, username=data.get("username", ""), display_name=data.get("username", ""))
-            await self.publish(LiveEvent(kind="sub", platform=self.name, user=user, amount=int(data.get("months", 1) or 1)))
+            await self.publish(LiveEvent(kind="sub", platform=self.name, user=user, gift="Sub", amount=int(data.get("months", 1) or 1)))
         elif name == "GiftedSubscriptionsEvent":
             gifter = data.get("gifted_by", "")
             user = User(platform=self.name, username=gifter, display_name=gifter)
             count = len(data.get("gifted_usernames", [])) or 1
-            await self.publish(LiveEvent(kind="gift", platform=self.name, user=user, gift="subs", amount=count, value=count * 500))
+            await self.publish(LiveEvent(kind="gift", platform=self.name, user=user, gift="Subs regaladas", amount=count, value=count * 500))
         elif name == "StreamHostEvent":
             host = data.get("host_username", "")
             user = User(platform=self.name, username=host, display_name=host)

@@ -1,4 +1,5 @@
 import { bindForm, esc, fieldHtml, getConfig, icon, selectHtml, setConfig, switchHtml, WHO_OPTIONS } from "../core.js";
+import { welcomeCardHtml } from "./welcome.js";
 
 let root;
 
@@ -47,6 +48,7 @@ function render(target) {
             ${switchHtml("tts.ignore_bots", "Ignorar bots (Nightbot, StreamElements…)")}
           </div>
         </div>
+        ${welcomeCardHtml()}
         <div class="card">
           <h2>${icon("mute")}Usuarios ignorados</h2>
           <p class="sub">Nunca se leen. También puedes silenciar a alguien desde el chat en vivo.</p>

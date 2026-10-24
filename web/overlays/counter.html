@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Contador</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { padding: .4em; font-size: var(--font); }
+  .c { display: inline-flex; align-items: center; gap: .5em; background: var(--card); border-radius: .8em; padding: .35em .8em; }
+  .ic { font-size: 1.1em; }
+  .v { font-weight: 900; font-variant-numeric: tabular-nums; font-size: 1.2em; transition: transform .2s; }
+  .v.bump { transform: scale(1.25); color: var(--accent); filter: brightness(1.5); }
+  .l { opacity: .8; font-size: .75em; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+</style>
+</head>
+<body>
+<div class="c"><span class="ic" id="ic"></span><span class="v" id="v">0</span><span class="l" id="l"></span></div>
+<script type="module">
+  import { connect, isPreview, params } from "/overlays/overlay.js";
+  const stat = params.get("stat") || "likes";
+  const META = {
+    likes: ["❤️", "likes"], followers: ["💜", "nuevos seguidores"], messages: ["💬", "mensajes"], chatters: ["🙋", "en el chat"],
+    gift_value: ["💎", "en regalos"], subs: ["⭐", "subs"], viewers: ["👀", "viendo"], shares: ["🔁", "compartidos"],
+  };
+  const [emoji, label] = META[stat] || ["#", stat];
+  document.getElementById("ic").textContent = emoji;
+  document.getElementById("l").textContent = params.get("label") ?? label;
+  let current = -1, viewers = {};
+  const fmt = (n) => new Intl.NumberFormat("es").format(n || 0);
+  function set(value) {
+    if (value === current) return;
+    const el = document.getElementById("v");
+    el.textContent = fmt(value);
+    if (current >= 0) { el.classList.add("bump"); setTimeout(() => el.classList.remove("bump"), 250); }
+    current = value;
+  }
+  const fromViewers = () => set(Object.values(viewers).reduce((total, p) => total + (p.viewers || 0), 0));
+  connect({
+    hello: (data) => { viewers = data.platforms || {}; stat === "viewers" ? fromViewers() : set(data.stats[stat] || 0); },
+    stats: (data) => stat !== "viewers" && set(data[stat] || 0),
+    "platform.status": (info) => { viewers[info.platform] = info; if (stat === "viewers") fromViewers(); },
+  });
+  if (isPreview) set(1234);
+</script>
+</body>
+</html>

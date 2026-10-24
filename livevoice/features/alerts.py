@@ -7,6 +7,7 @@ from livevoice.audio.player import AudioPlayer
 from livevoice.core.bus import bus
 from livevoice.core.logger import logger
 from livevoice.core.models import LiveEvent
+from livevoice.features.custom_alerts import media_url
 from livevoice.tts.manager import PRIORITY_ALERT, PRIORITY_EVENT, TTSManager
 from livevoice.tts.text import clean_for_speech, render
 
@@ -80,4 +81,8 @@ class Alerts:
                 "amount": amount,
                 "gift": event.gift,
                 "image": event.image,
+                # GIF/imagen/video propio de esta acción (Alertas → tarjeta de cada acción).
+                "media": media_url(settings.get("media", "")),
+                "media_type": "video" if str(settings.get("media", "")).lower().endswith((".mp4", ".webm")) else "image",
+                "duration": float(settings.get("duration", 0) or 0),
             })

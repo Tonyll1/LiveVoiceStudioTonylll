@@ -1,4 +1,4 @@
-import { action, esc, fmt, getConfig, icon, modal, pfBadge, setConfig, store, timeAgo, toast, PLATFORM_LABEL } from "../core.js";
+import { action, bindForm, esc, fmt, getConfig, icon, modal, pfBadge, setConfig, store, switchHtml, timeAgo, toast, PLATFORM_LABEL } from "../core.js";
 
 const PLACEHOLDER = {
   tiktok: "usuario de TikTok (sin @)",
@@ -134,6 +134,7 @@ function renderTTS() {
     <div class="now ${current ? "" : "idle"}">
       <div class="label">${current ? '<span class="wave"><i></i><i></i><i></i><i></i></span> Hablando ahora' : tts.muted ? "🔇 Voz silenciada" : tts.paused ? "⏸ Pausado" : "En silencio"}</div>
       <div class="text">${current ? esc(current.text) : '<span class="faint">Los mensajes del chat sonarán aquí.</span>'}</div>
+      ${current?.voice_used ? `<div class="small faint" style="margin-top:6px">🎙️ ${esc(current.voice_used)}${current.fallback ? ` <span class="tag" style="color:var(--warn)" title="La voz elegida (${esc(current.voice)}) falló">↪ respaldo</span>` : ""}</div>` : ""}
     </div>
     ${failing.length ? `<div class="callout warn small">⚠️ Motor caído: ${failing.map(([name]) => name).join(", ")}. Se está usando el respaldo automático.</div>` : ""}
     <div class="row" style="margin:12px 0 8px"><b class="small">Cola</b><span class="faint small">${tts.queue_size} pendientes</span><span class="spacer"></span>
@@ -167,7 +168,12 @@ function render(target) {
         <div class="feed" id="feed"></div>
       </div>
       <div class="stack">
-        <div class="card"><h2>${icon("voice")}Voz en vivo</h2><div id="tts-box" style="margin-top:10px"></div></div>
+        <div class="card"><h2>${icon("voice")}Voz en vivo</h2><div id="tts-box" style="margin-top:10px"></div>
+          <div class="divider" style="margin:12px 0"></div>
+          <div class="stack" id="voice-quick" style="gap:10px">
+            ${switchHtml("tts.enabled", "Leer el chat")}
+            ${switchHtml("welcome.enabled", "Saludar por voz a los nuevos", "Cámbialo en Lectura → Bienvenida por voz")}
+          </div></div>
         <div class="card">
           <h2>${icon("send")}Decir algo</h2>
           <p class="sub">Lo dice la voz principal al momento (no pasa por la cola).</p>
@@ -184,6 +190,7 @@ function render(target) {
       </div>
     </div>`;
 
+  bindForm(root.querySelector("#voice-quick"));
   renderPlatforms();
   renderStats();
   renderFeed();
