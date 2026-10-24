@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Encuesta</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { padding: .6em; font-size: calc(var(--font) * .9); }
+  .card { background: var(--card); border-radius: 1.2em; padding: 1em 1.2em; animation: pop-in .5s ease both; border: 2px solid color-mix(in srgb, var(--accent) 50%, transparent); }
+  .q { font-weight: 900; font-size: 1.15em; margin-bottom: .6em; }
+  .meta { font-size: .7em; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); filter: brightness(1.4); font-weight: 800; display: flex; justify-content: space-between; margin-bottom: .3em; }
+  .o { margin: .45em 0; }
+  .ol { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: .2em; }
+  .n { display: inline-grid; place-items: center; width: 1.4em; height: 1.4em; border-radius: .4em; background: var(--accent); margin-right: .4em; font-weight: 900; }
+  .bar { height: .8em; border-radius: 1em; background: rgba(255,255,255,.12); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .6s; border-radius: 1em; }
+  .win .bar i { background: linear-gradient(90deg, #22c55e, #84cc16); }
+</style>
+</head>
+<body>
+<div id="box"></div>
+<script type="module">
+  import { connect, esc, isPreview } from "/overlays/overlay.js";
+  const box = document.getElementById("box");
+  let hideTimer;
+  function update(p) {
+    if (!p || !p.results?.length) return (box.innerHTML = "");
+    clearTimeout(hideTimer);
+    const best = Math.max(...p.results.map((r) => r.votes));
+    box.innerHTML = `<div class="card">
+      <div class="meta"><span>📊 ${p.active ? "Vota con el número" : "Resultado"}</span><span>${p.active ? `${p.remaining}s · ` : ""}${p.total} votos</span></div>
+      <div class="q shadow-text">${esc(p.question)}</div>
+      ${p.results.map((r, i) => `<div class="o ${!p.active && r.votes === best && best > 0 ? "win" : ""}">
+        <div class="ol"><span><span class="n">${i + 1}</span>${esc(r.option)}</span><span>${r.percent}%</span></div>
+        <div class="bar"><i style="width:${r.percent}%"></i></div></div>`).join("")}</div>`;
+    if (!p.active) hideTimer = setTimeout(() => (box.innerHTML = ""), 15000);
+  }
+  connect({ hello: (data) => data.poll.active && update(data.poll), poll: update });
+  if (isPreview) update({ active: true, question: "¿Qué jugamos?", remaining: 42, total: 18, results: [{ option: "Minecraft", votes: 11, percent: 61 }, { option: "Fortnite", votes: 7, percent: 39 }] });
+</script>
+</body>
+</html>

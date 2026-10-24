@@ -1,33 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 
-customtkinter_datas, customtkinter_binaries, customtkinter_hidden = collect_all("customtkinter")
+datas = [("web", "web")]
+binaries = []
+hiddenimports = collect_submodules("TikTokLive") + collect_submodules("edge_tts") + collect_submodules("livevoice")
 
-hiddenimports = (
-    customtkinter_hidden
-    + collect_submodules("TikTokLive")
-    + collect_submodules("edge_tts")
-)
+for package in ("webview", "piper", "onnxruntime", "kokoro_onnx", "espeakng_loader", "phonemizer"):
+    package_datas, package_binaries, package_hidden = collect_all(package)
+    datas += package_datas
+    binaries += package_binaries
+    hiddenimports += package_hidden
 
 analysis = Analysis(
     ["main.py"],
     pathex=[],
-    binaries=customtkinter_binaries,
-    datas=customtkinter_datas,
+    binaries=binaries,
+    datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[
-        "matplotlib",
-        "numpy",
-        "pandas",
-        "scipy",
-        "sklearn",
-        "seaborn",
-        "jupyter",
-        "IPython",
-    ],
+    excludes=["matplotlib", "pandas", "scipy", "sklearn", "seaborn", "jupyter", "IPython", "tkinter", "customtkinter"],
     noarchive=False,
     optimize=1,
 )
@@ -44,7 +37,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,

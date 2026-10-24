@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Eventos recientes</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { padding: .5em; font-size: calc(var(--font) * .78); }
+  .box { background: var(--card); border-radius: 1em; padding: .6em .8em; }
+  h3 { margin: 0 0 .4em; font-size: .78em; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); filter: brightness(1.4); }
+  .e { display: flex; align-items: center; gap: .55em; padding: .35em 0; border-top: 1px solid rgba(255,255,255,.08); animation: slide-in .4s ease both; }
+  .e:first-of-type { border-top: 0; }
+  .ic { font-size: 1.1em; width: 1.4em; text-align: center; }
+  .n { font-weight: 800; }
+  .d { opacity: .8; font-size: .9em; }
+  .empty { opacity: .6; font-size: .85em; }
+</style>
+</head>
+<body>
+<div class="box"><h3 id="title"></h3><div id="list"></div></div>
+<script type="module">
+  import { connect, esc, isPreview, params, pf } from "/overlays/overlay.js";
+  const kinds = (params.get("kinds") || "follow,gift,sub,bits,raid,share").split(",");
+  const limit = Number(params.get("limit")) || 6;
+  document.getElementById("title").textContent = params.get("title") || "⚡ Actividad reciente";
+  const ICON = { follow: "💜", gift: "🎁", sub: "⭐", bits: "💎", raid: "🚀", share: "🔁" };
+  const DESC = {
+    follow: () => "nuevo seguidor", gift: (e) => `${e.amount}× ${esc(e.gift)}`, sub: () => "suscripción",
+    bits: (e) => `${e.amount} bits`, raid: (e) => `raid de ${e.amount}`, share: () => "compartió",
+  };
+  const items = [];
+  function draw() {
+    const list = document.getElementById("list");
+    list.innerHTML = items.length
+      ? items.map((e) => `<div class="e"><span class="ic">${ICON[e.kind]}</span>${pf(e.platform)}<span class="n shadow-text">${esc(e.user.name)}</span><span class="d">${DESC[e.kind](e)}</span></div>`).join("")
+      : '<div class="empty">Aún no hay actividad</div>';
+  }
+  function add(event) {
+    if (!kinds.includes(event.kind)) return;
+    items.unshift(event);
+    items.length = Math.min(items.length, limit);
+    draw();
+  }
+  connect({ hello: (data) => { items.length = 0; (data.recent || []).forEach(add); draw(); }, event: add });
+  draw();
+  if (isPreview) [["follow", "Ana"], ["gift", "Luis"], ["sub", "gamer_pro"]].forEach(([kind, name]) => add({ kind, platform: "tiktok", amount: 5, gift: "Rosa", user: { name } }));
+</script>
+</body>
+</html>

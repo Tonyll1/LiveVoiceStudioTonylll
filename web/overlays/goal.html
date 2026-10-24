@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Meta</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { padding: .5em; font-size: var(--font); }
+  .goal { background: var(--card); border-radius: 1em; padding: .6em .8em; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; margin-bottom: .4em; }
+  .head .n { font-variant-numeric: tabular-nums; }
+  .bar { height: 1.1em; border-radius: 1em; background: rgba(255,255,255,.12); overflow: hidden; position: relative; }
+  .fill { height: 100%; border-radius: 1em; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .8s cubic-bezier(.2,.9,.3,1); position: relative; overflow: hidden; }
+  .fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); background-size: 200% 100%; animation: shine 2s linear infinite; }
+  .done .fill { background: linear-gradient(90deg, #22c55e, #84cc16); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="goal hidden" id="goal"><div class="head"><span id="title"></span><span class="n" id="count"></span></div><div class="bar"><div class="fill" id="fill" style="width:0"></div></div></div>
+<script type="module">
+  import { connect, isPreview, params } from "/overlays/overlay.js";
+  const key = params.get("goal") || "likes";
+  const fmt = (n) => new Intl.NumberFormat("es").format(n || 0);
+  function update(goals) {
+    const g = goals?.[key];
+    const box = document.getElementById("goal");
+    if (!g || (!g.enabled && !isPreview)) return box.classList.add("hidden");
+    box.classList.remove("hidden");
+    const percent = Math.min(100, (g.current * 100) / (g.target || 1));
+    document.getElementById("title").textContent = g.title;
+    document.getElementById("count").textContent = `${fmt(g.current)} / ${fmt(g.target)}`;
+    document.getElementById("fill").style.width = `${percent}%`;
+    box.classList.toggle("done", percent >= 100);
+  }
+  connect({ hello: (data) => update(data.goals), goals: update });
+  if (isPreview) update({ [key]: { enabled: true, title: "Meta de likes", current: 640, target: 1000 } });
+</script>
+</body>
+</html>

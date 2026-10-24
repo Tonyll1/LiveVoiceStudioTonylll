@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Ranking</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { padding: .5em; font-size: calc(var(--font) * .8); }
+  .board { background: var(--card); border-radius: 1em; padding: .7em .9em; }
+  h3 { margin: 0 0 .5em; font-size: .8em; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); filter: brightness(1.4); }
+  .r { display: flex; align-items: center; gap: .6em; padding: .35em 0; animation: slide-in .4s ease both; }
+  .pos { width: 1.6em; height: 1.6em; border-radius: 50%; display: grid; place-items: center; font-weight: 900; background: rgba(255,255,255,.12); font-size: .85em; }
+  .r:nth-child(2) .pos { background: #fbbf24; color: #111; } .r:nth-child(3) .pos { background: #cbd5e1; color: #111; } .r:nth-child(4) .pos { background: #d97706; color: #111; }
+  .name { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .v { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .empty { opacity: .6; font-size: .85em; }
+</style>
+</head>
+<body>
+<div class="board"><h3 id="title"></h3><div id="list"></div></div>
+<script type="module">
+  import { connect, esc, isPreview, params } from "/overlays/overlay.js";
+  const type = params.get("type") || "gifters";
+  const limit = Number(params.get("limit")) || 5;
+  document.getElementById("title").textContent = params.get("title") || (type === "points" ? "🏆 Top puntos" : "🎁 Top regalos");
+  const fmt = (n) => new Intl.NumberFormat("es").format(n || 0);
+  function draw(rows) {
+    const list = document.getElementById("list");
+    list.innerHTML = rows.length
+      ? rows.slice(0, limit).map((row, i) => `<div class="r"><span class="pos">${i + 1}</span><span class="name shadow-text">${esc(row.name)}</span><span class="v">${fmt(row.value ?? row.points)}</span></div>`).join("")
+      : '<div class="empty">¡Sé el primero!</div>';
+  }
+  async function refreshPoints() {
+    const rows = await fetch("/api/leaderboard").then((r) => r.json());
+    draw(rows);
+  }
+  if (type === "points") {
+    refreshPoints();
+    setInterval(refreshPoints, 15000);
+  } else {
+    connect({ hello: (data) => draw(data.stats.top_gifters), stats: (data) => draw(data.top_gifters) });
+  }
+  if (isPreview) draw([{ name: "Ana", value: 1200 }, { name: "gamer_pro", value: 540 }, { name: "Luis", value: 99 }]);
+</script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Subtítulos</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { width: 100vw; height: 100vh; display: flex; align-items: flex-end; justify-content: center; }
+  .sub { margin: .6em; padding: .7em 1.1em; max-width: 95vw; background: var(--card); border-radius: 1em; font-size: var(--font);
+    border: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); display: flex; gap: .8em; align-items: center;
+    animation: pop-in .4s ease both; }
+  .sub.out { animation: fade-out .4s ease forwards; }
+  .wave { display: flex; gap: .15em; align-items: center; height: 1.4em; }
+  .wave i { width: .22em; background: var(--accent); border-radius: 1em; animation: w 1s infinite ease-in-out; }
+  .wave i:nth-child(2) { animation-delay: .15s } .wave i:nth-child(3) { animation-delay: .3s } .wave i:nth-child(4) { animation-delay: .45s }
+  @keyframes w { 0%,100% { height: .3em } 50% { height: 1.3em } }
+  .who { font-weight: 900; color: var(--accent); filter: brightness(1.4); font-size: .75em; letter-spacing: .05em; text-transform: uppercase; }
+  .text { font-weight: 700; line-height: 1.25; }
+</style>
+</head>
+<body>
+<div id="box"></div>
+<script type="module">
+  import { connect, esc, isPreview, pf } from "/overlays/overlay.js";
+  const box = document.getElementById("box");
+  let currentId = null;
+
+  function speaking(item) {
+    if (item.speaking) {
+      currentId = item.id;
+      box.innerHTML = `<div class="sub"><div class="wave"><i></i><i></i><i></i><i></i></div>
+        <div>${item.user ? `<div class="who">${pf(item.platform)} ${esc(item.user)}</div>` : ""}<div class="text shadow-text">${esc(item.text)}</div></div></div>`;
+    } else if (item.id === currentId) {
+      const el = box.firstElementChild;
+      el?.classList.add("out");
+      setTimeout(() => { if (currentId === item.id) box.innerHTML = ""; }, 400);
+    }
+  }
+  connect({ "tts.speaking": speaking });
+  if (isPreview) speaking({ id: "x", speaking: true, user: "Ana", platform: "tiktok", text: "Ana dice: ¡hola a todos, qué buen directo!" });
+</script>
+</body>
+</html>

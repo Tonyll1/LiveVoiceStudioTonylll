@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Sorteo</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { padding: .6em; font-size: var(--font); }
+  .card { background: var(--card); border-radius: 1.2em; padding: 1em 1.2em; text-align: center; border: 2px solid color-mix(in srgb, var(--accent) 60%, transparent); animation: pop-in .5s ease both; }
+  .k { font-size: .7em; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); filter: brightness(1.4); font-weight: 800; }
+  .prize { font-size: 1.2em; font-weight: 900; margin: .2em 0; }
+  .cmd { display: inline-block; margin: .3em 0; padding: .2em .7em; border-radius: .5em; background: var(--accent); font-weight: 900; }
+  .count { font-size: 2.4em; font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1; margin-top: .2em; }
+  .roll { font-size: 1.6em; font-weight: 900; min-height: 1.3em; margin: .3em 0; }
+  .winner { font-size: 1.8em; font-weight: 900; color: #fbbf24; animation: pop-in .6s cubic-bezier(.2,1.4,.4,1) both; text-shadow: 0 0 30px rgba(251,191,36,.6); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div id="box"></div>
+<script type="module">
+  import { connect, esc, isPreview, sleep } from "/overlays/overlay.js";
+  const box = document.getElementById("box");
+  let rolling = false;
+
+  async function roll(names, winner) {
+    rolling = true;
+    for (let i = 0; i < 26; i++) {
+      const el = box.querySelector(".roll");
+      if (!el) break;
+      el.textContent = names[Math.floor(Math.random() * names.length)];
+      await sleep(50 + i * 6);
+    }
+    rolling = false;
+  }
+
+  async function update(g) {
+    if (!g) return;
+    if (rolling && !g.announce) return;
+    if (!g.active && !g.winner && !g.rolling && !g.count) return (box.innerHTML = "");
+    if (g.rolling) {
+      box.innerHTML = `<div class="card"><div class="k">🎁 Sorteando…</div><div class="roll"></div></div>`;
+      return roll(g.rolling);
+    }
+    box.innerHTML = `<div class="card">
+      <div class="k">🎁 Sorteo ${g.active ? "abierto" : g.winner ? "· ganador" : "cerrado"}</div>
+      ${g.prize ? `<div class="prize shadow-text">${esc(g.prize)}</div>` : ""}
+      ${g.winner ? `<div class="winner">🏆 ${esc(g.winner.name)}</div>` : g.active ? `<div>Escribe <span class="cmd">${esc(g.keyword)}</span> para participar</div>` : ""}
+      <div class="count">${g.count}</div><div class="k" style="color:#fff">participantes</div></div>`;
+  }
+  connect({ hello: (data) => update(data.giveaway), giveaway: update });
+  if (isPreview) update({ active: true, keyword: "!sorteo", prize: "Una camiseta", count: 23 });
+</script>
+</body>
+</html>

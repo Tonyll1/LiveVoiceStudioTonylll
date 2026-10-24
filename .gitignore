@@ -1,29 +1,29 @@
-# Entorno virtual
 .venv/
-
-# Caché de Python
 __pycache__/
-*.py[cod]
-
-# Compilación
-build/
-dist/
-
-# Pytest
+*.pyc
 .pytest_cache/
 
-# Logs
-logs/
+# Build
+build/
+dist/
+release/
 
-# Configuración local
+# Datos locales del usuario
 config.json
+config.broken.json
 commands.json
-
-# Audio generado automáticamente
+logs/
+data/
+clips/
 sounds/cache/
+sounds/commands/*
+!sounds/commands/.gitkeep
+sounds/alerts/*
+!sounds/alerts/.gitkeep
+estructura.txt
 
-# Modelos locales de Piper
-voices/piper/
+# Voces descargadas o propias
+voices/
 
-# Archivos temporales
-*.spec.bak
+# Imágenes, GIF y videos de alertas propias
+media/
