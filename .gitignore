@@ -1,24 +1,23 @@
 .venv/
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
+.pytest_cache/
 
-logs/*.log
-sounds/cache/
-
-estructura.txt
-tree.txt
-
-*.old.py
-# Build outputs
+# Build
 build/
 dist/
-*.spec.bak
+release/
 
-# Local runtime data
-commands.json
+# Datos locales del usuario
 config.json
+config.broken.json
+commands.json
+logs/
+data/
+clips/
+sounds/cache/
 sounds/commands/*
 !sounds/commands/.gitkeep
-.pytest_cache/
+sounds/alerts/*
+!sounds/alerts/.gitkeep
+estructura.txt

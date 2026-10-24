@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LiveVoice · Alertas</title>
+<link rel="stylesheet" href="/overlays/overlay.css">
+<style>
+  body { width: 100vw; height: 100vh; }
+  #stage { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); display: flex; justify-content: center; width: 100%; }
+  .alert {
+    display: flex; align-items: center; gap: 1.1em; padding: 1em 1.6em 1em 1em; min-width: 22em; max-width: 90vw;
+    background: var(--card); border-radius: 1.4em; font-size: var(--font); position: relative; overflow: hidden;
+    border: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent), 0 20px 60px rgba(0,0,0,.5), 0 0 60px color-mix(in srgb, var(--accent) 45%, transparent);
+    animation: pop-in .7s cubic-bezier(.2,1.4,.4,1) both;
+  }
+  .alert.out { animation: fade-out .6s ease forwards; }
+  .alert::before { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.14) 50%, transparent 70%); background-size: 200% 100%; animation: shine 2.2s linear infinite; }
+  .avatar { width: 3.6em; height: 3.6em; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); flex: none; background: #222; display: grid; place-items: center; font-weight: 900; font-size: 1em; animation: float 2s ease-in-out infinite; }
+  .gift-img { width: 3em; height: 3em; object-fit: contain; animation: float 1.6s ease-in-out infinite; }
+  .title { font-size: .72em; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); filter: brightness(1.4); }
+  .name { font-size: 1.35em; font-weight: 900; line-height: 1.1; }
+  .text { font-size: .85em; opacity: .92; margin-top: .2em; }
+  .gift .title, .bits .title { color: #fbbf24; }
+  .gift, .bits { border-color: #fbbf24; box-shadow: 0 0 0 6px rgba(251,191,36,.18), 0 20px 60px rgba(0,0,0,.5), 0 0 70px rgba(251,191,36,.5); }
+  .raid, .sub, .goal { border-color: var(--accent-2); box-shadow: 0 0 0 6px rgba(236,72,153,.2), 0 20px 60px rgba(0,0,0,.5), 0 0 70px rgba(236,72,153,.5); }
+  .confetti { position: fixed; top: -20px; width: 12px; height: 18px; border-radius: 3px; animation: drop linear forwards; }
+  @keyframes drop { to { transform: translateY(110vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+  import { connect, esc, isPreview, pf, sequencer, sleep } from "/overlays/overlay.js";
+
+  const stage = document.getElementById("stage");
+  const EMOJI = { follow: "💜", gift: "🎁", sub: "⭐", bits: "💎", raid: "🚀", share: "🔁", like: "❤️", join: "👋", goal: "🏆" };
+
+  function confetti(count = 70) {
+    const colors = ["#8b5cf6", "#ec4899", "#fbbf24", "#22d3ee", "#4ade80", "#fff"];
+    for (let i = 0; i < count; i++) {
+      const piece = document.createElement("div");
+      piece.className = "confetti";
+      piece.style.left = `${Math.random() * 100}vw`;
+      piece.style.background = colors[i % colors.length];
+      piece.style.animationDuration = `${2 + Math.random() * 2.5}s`;
+      piece.style.animationDelay = `${Math.random() * .6}s`;
+      document.body.append(piece);
+      setTimeout(() => piece.remove(), 5500);
+    }
+  }
+
+  const show = sequencer(async (alert) => {
+    const user = alert.user || {};
+    const initial = esc((user.name || "?")[0] || "?").toUpperCase();
+    const avatar = user.avatar ? `<img class="avatar" src="${esc(user.avatar)}" referrerpolicy="no-referrer" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">` : `<div class="avatar">${EMOJI[alert.kind] || initial}</div>`;
+    const el = document.createElement("div");
+    el.className = `alert ${alert.kind}`;
+    el.innerHTML = `${avatar}
+      <div style="flex:1;min-width:0">
+        <div class="title">${pf(alert.platform)} ${EMOJI[alert.kind] || ""} ${esc(alert.title)}</div>
+        ${user.name ? `<div class="name shadow-text">${esc(user.name)}</div>` : ""}
+        <div class="text">${esc(alert.text)}</div>
+      </div>
+      ${alert.image ? `<img class="gift-img" src="${esc(alert.image)}" referrerpolicy="no-referrer">` : ""}`;
+    stage.replaceChildren(el);
+    if (["gift", "bits", "raid", "sub", "goal"].includes(alert.kind)) confetti(alert.kind === "goal" ? 140 : 70);
+    await sleep(alert.kind === "goal" ? 7000 : 5200);
+    el.classList.add("out");
+    await sleep(650);
+    el.remove();
+  });
+
+  connect({ alert: show });
+  if (isPreview) show({ kind: "gift", title: "Regalo", text: "¡Gracias por los 5 Rosas!", user: { name: "Espectador" }, platform: "tiktok" });
+</script>
+</body>
+</html>

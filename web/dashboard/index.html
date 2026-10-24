@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LiveVoice Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo" id="brand-logo"></div>
+        <div><b>LiveVoice Studio</b><span id="version">v1.0</span></div>
+      </div>
+      <nav id="nav"></nav>
+      <div class="sidebar-footer">
+        <div class="quickbar">
+          <div class="quickbar-row">
+            <button class="qbtn" id="q-mute" title="Silenciar voz (Ctrl+Alt+M)"></button>
+            <button class="qbtn" id="q-pause" title="Pausar (Ctrl+Alt+P)"></button>
+            <button class="qbtn" id="q-skip" title="Saltar mensaje (Ctrl+Alt+S)"></button>
+            <button class="qbtn" id="q-clear" title="Vaciar cola (Ctrl+Alt+C)"></button>
+            <button class="qbtn" id="q-clip" title="Guardar clip (Ctrl+Alt+K)"></button>
+          </div>
+          <label><span>Volumen voz</span><b id="q-vol-label">100%</b></label>
+          <input type="range" id="q-vol" min="0" max="100">
+        </div>
+      </div>
+    </aside>
+    <main class="main" id="main"></main>
+  </div>
+  <div class="toasts" id="toasts"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
